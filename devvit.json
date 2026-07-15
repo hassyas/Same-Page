@@ -1,0 +1,50 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "karmic-sense",
+  "marketingAssets": {
+    "icon": "public/icon.png"
+  },
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "inline": true,
+        "entry": "splash.html",
+        "height": "regular"
+      },
+      "game": {
+        "entry": "game.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "permissions": {
+    "reddit": {
+      "asUser": ["SUBMIT_COMMENT"]
+    }
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Create a new post",
+        "description": "karmic-sense",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/post-create"
+      }
+    ]
+  },
+  "triggers": {
+    "onAppInstall": "/internal/triggers/on-app-install"
+  },
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build"
+  },
+  "dev": {
+    "subreddit": "karmic_sense_dev"
+  }
+}

@@ -1,0 +1,335 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+@import './styles/fonts.css';
+
+/* Same Page — Tailwind v4 only emits a utility class (e.g. `.font-display`)
+   for a name declared inside @theme; a bare :root var (tokens.css) does not
+   get one, so this key has to stay mirrored here even though tokens.css's
+   unlayered copy is what actually wins the cascade. Keep the two in sync by
+   hand when the display face changes. */
+@theme {
+  --font-display: 'Alfa Slab One', 'Arial Black', sans-serif;
+}
+
+.font-display {
+  letter-spacing: 0.07em;
+}
+
+/* PrimaryButton/GhostButton "clay" shadow swap on hover/active — the shadow
+   height changes (not just darkens), so it has to be a real box-shadow swap,
+   not a CSS filter. Driven by --hover-shadow/--active-shadow custom
+   properties set inline per variant at the call site. */
+.btn-clay:hover:not(:disabled) {
+  box-shadow: var(--hover-shadow);
+}
+.btn-clay:active:not(:disabled) {
+  box-shadow: var(--active-shadow);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
+
+  /* Blocker #18 — Devvit's inline post entrypoint reserves a fixed slot
+     height (independent of our content height); with no background set
+     here, any gap between our content and that reserved height showed
+     through as unstyled white in the real Reddit feed/thread (never caught
+     via Devvit's expanded-mode preview switcher, which doesn't have this
+     reserved-slot behavior). html/body/#root have no intrinsic height of
+     their own to inherit from without this, so this is the backstop under
+     splash.tsx's own h-full fill — belt and suspenders, not redundant. */
+  html,
+  body {
+    background-color: var(--canvas);
+    color: var(--on-canvas);
+  }
+}
+
+/* Addendum B1/B4 — reveal choreography. Elements that arrive after the
+   withhold beat fade/rise in, staggered via animation-delay at the call
+   site; a correct/synced pick gets a small "warm pop"; distribution bars
+   grow with a spring/overshoot easing instead of just appearing. Each call
+   site pairs these with `motion-reduce:animate-none` per B7. */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes reveal-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes marker-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* "Next level" brainstorm item #1 (Addendum A8's CSS-tier hive-swarm reveal):
+   the Pulse distribution arrives as a swarm of dots flying in from a
+   scattered start (--dx/--dy set per-dot at the call site) and settling into
+   their bucket, landing with a small overshoot — the signature "wow" moment
+   Addendum A8 gated behind the rest of the app being locked. Paired with
+   motion-reduce:animate-none at the call site like every other reveal
+   animation. */
+@keyframes swarm-in {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, -30px)) scale(0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(calc(var(--dx, 0px) * 0.08), calc(var(--dy, -30px) * 0.08)) scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+/* Addendum B4 — "transitions between rounds should feel like turning a
+   card, not a page reload." Applied via a remount-keyed wrapper so it
+   fires consistently on every round/view switch, not just the reveal. */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@utility animate-reveal-in {
+  animation: reveal-in 380ms ease-out both;
+}
+
+@utility animate-reveal-pop {
+  animation: reveal-pop 420ms ease-out both;
+}
+
+@utility animate-bar-grow {
+  transform-origin: bottom;
+  animation: bar-grow 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@utility animate-marker-drop {
+  animation: marker-drop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@utility animate-swarm-in {
+  animation: swarm-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@utility animate-card-in {
+  animation: card-in 320ms ease-out both;
+}
+
+/* SWARM SIGNAL Section 6 — splash-only ambient: a slow opacity pulse on a
+   handful of swarm-field dots, so even the idle first-impression card reads
+   as "signal at night" rather than a static texture. Amplitude deliberately
+   small (0.08–0.2, was 0.1–0.35) — this is the app's only idle/ambient
+   animation, everything else fires as the result of an action, so it needs
+   to stay easy to ignore rather than compete for attention on first paint. */
+@keyframes swarm-pulse {
+  0%,
+  100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@utility animate-swarm-pulse {
+  animation: swarm-pulse 4s ease-in-out infinite;
+}
+
+/* SWARM SIGNAL Section 5c — the "warm pop" of a synced Pulse result: a soft
+   radial ember glow fades in under the player's dot. Light, not a surface
+   fill (the one allowed radial per Section 2). Paired with
+   motion-reduce:animate-none at the call site. */
+@keyframes glow-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@utility animate-glow-in {
+  animation: glow-in 520ms ease-out both;
+}
+
+/* P2 (UI/UX overhaul) — new motion for the tile-system primitives, additive
+   only. Nothing above this line was touched or retimed. */
+
+/* Tile.tsx reveal (correct/wrong flip), 220ms rotateX. Reduced-motion falls
+   back to a plain opacity fade via the paired motion-reduce:animate-none
+   at the call site (REVEAL_FLIP in motion.ts). */
+@keyframes reveal-flip {
+  from {
+    opacity: 0;
+    transform: rotateX(90deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0deg);
+  }
+}
+
+@utility animate-reveal-flip {
+  animation: reveal-flip var(--dur-mid) var(--ease-out) both;
+  transform-style: preserve-3d;
+}
+
+/* Large numeric surfaces (StreakRing center, RevealRow values) settle with
+   a small easeOutExpo pop once useCountUp's JS count finishes — decorative
+   only, does not touch useCountUp's own count timing/logic. */
+@keyframes count-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@utility animate-count-pop {
+  animation: count-pop 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Tier-up only: 8 hex chips burst outward from the tier badge and fade,
+   one-shot. Each chip sets --dx/--dy at the call site (same pattern as the
+   existing swarm-in). Reduced-motion callers should render a static badge
+   instead of mounting the burst at all (see EmberBurst.tsx). */
+@keyframes ember-burst {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.4);
+  }
+}
+
+@utility animate-ember-burst {
+  animation: ember-burst 700ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+}
+
+/* P5 (UI/UX overhaul) — loading-state skeleton tiles: a --rule opacity
+   shimmer. Reduced-motion callers should apply motion-reduce:animate-none
+   at the call site (renders as a static --rule block instead). */
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer 0.6s ease-in-out infinite;
+}
+
+/* Pulse's <input type="range"> — the one native-OS-styled control in the
+   app. Same element/onChange/value/neutral-center-tick, only the thumb/
+   track pseudo-elements are replaced — drag mechanics and reveal timing
+   untouched (regression fence). Track is the aqua→terracotta duel gradient
+   (the one deliberate, spec-sanctioned gradient in this system — it encodes
+   the axis the player is betting along, the same binary the flat two-tone
+   Split Bar encodes without a gradient elsewhere; not a decorative hero
+   gradient). Thumb mirrors the app's "this one is you" gold marker
+   (Dot's player state, EmberBurst, heat-strip pin). */
+.pulse-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+.pulse-slider:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: var(--r-pill);
+}
+.pulse-slider::-webkit-slider-runnable-track {
+  height: 16px;
+  border-radius: var(--r-pill);
+  border: var(--border-w) solid var(--ink);
+  background: linear-gradient(90deg, var(--aqua) 0%, var(--surface-2) 50%, var(--terracotta) 100%);
+}
+.pulse-slider::-moz-range-track {
+  height: 16px;
+  border-radius: var(--r-pill);
+  border: var(--border-w) solid var(--ink);
+  background: linear-gradient(90deg, var(--aqua) 0%, var(--surface-2) 50%, var(--terracotta) 100%);
+}
+.pulse-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: var(--border-w) solid var(--ink);
+  box-shadow: 0 4px 0 var(--gold-deep);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.pulse-slider::-moz-range-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--gold);
+  border: var(--border-w) solid var(--ink);
+  box-shadow: 0 4px 0 var(--gold-deep);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.pulse-slider:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.pulse-slider:active::-moz-range-thumb {
+  transform: scale(1.15);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pulse-slider::-webkit-slider-thumb,
+  .pulse-slider::-moz-range-thumb {
+    transition: none;
+  }
+}

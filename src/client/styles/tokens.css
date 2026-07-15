@@ -1,0 +1,106 @@
+/* P0 — Same Page design tokens. "Bold clay" identity: dark ink-teal canvas,
+   aqua/terracotta duel pair, gold reserved for reward/streak moments only.
+   Source of truth: D:\Hackthon\styles.css / index (1).html (the prototype),
+   DESIGN_SPEC.md loses on any conflict with those two files.
+   Plain :root custom properties (not Tailwind's @theme namespace) so every
+   consumer reads `var(--token)` directly, including via Tailwind v4's
+   arbitrary-value utilities (e.g. `bg-[var(--tile)]`). */
+:root {
+  --canvas: #0f1b1a;
+  --canvas-line: rgba(255, 255, 255, 0.06);
+  --tile: #fffdf7;
+  --surface-2: #f3f0e4;
+  --ink: #14151a;
+  --ink-soft: #5b5d66;
+  --ink-soft-2: #33353d;
+  --on-canvas: #f3f0e4;
+  --on-canvas-soft: #9ca6a2;
+  --rule: #e4dfce;
+
+  /* Nested dark data panel (RevealPanel etc.) — re-hued to the ink-teal
+     family, not the old cool navy-black, so it reads as "this system's dark"
+     rather than a leftover from a different palette. */
+  --reveal-bg: #0a1412;
+  --reveal-ink: var(--on-canvas);
+  --reveal-dim: var(--on-canvas-soft);
+  --reveal-rule: rgba(255, 255, 255, 0.08);
+
+  /* The duel — every use means the same thing everywhere: two sides of a
+     binary (vote split, spectrum ends, correct/incorrect). Never a generic
+     third/fourth accent. */
+  --aqua: #14c6a8;
+  --aqua-deep: #0a7c69;
+  --aqua-tint: #e3faf4;
+  --terracotta: #d9603f;
+  --terracotta-deep: #9c3f2a;
+  --terracotta-tint: #fbeae4;
+
+  /* Reward only — streak, tier-up, medals. Never a decorative third accent. */
+  --gold: #f0aa1f;
+  --gold-deep: #c4860f;
+  --gold-tint: #fef3dc;
+
+  /* Aliases for the app's existing 3-tier "how close" semantics */
+  --synced: var(--aqua);
+  --close: #8a9490;
+  --off: var(--terracotta);
+
+  --brand: var(--ink);
+  --brand-ink: #ffffff;
+
+  /* Archetype hues reuse the existing clay tokens, not bespoke hex values —
+     see SharePoster.tsx for the paired text-color contrast fixes. */
+  --arch-hivemind: var(--aqua);
+  --arch-contrarian: var(--terracotta);
+  --arch-wildcard: var(--gold);
+  --arch-lurker: var(--ink);
+
+  --font-display: 'Alfa Slab One', 'Arial Black', sans-serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --size-poster: clamp(44px, 14vw, 96px);
+  --size-h1: clamp(28px, 7.5vw, 40px);
+  --size-h2: clamp(20px, 5.5vw, 24px);
+  --size-body: 16px;
+  --size-small: 13px;
+  --size-mono-lg: clamp(22px, 6vw, 28px);
+
+  /* Dot-row sizing (Dot.tsx's SVG dots + SharePoster's text-glyph dot line)
+     — both driven by a real relative unit here (rem / a clamp()) instead of
+     a fixed px number, so reducing them keeps their proportional
+     relationship to their context instead of pinning a one-off pixel value.
+     Both cut 30% off their prior baseline this session. --size-dots-line is
+     its own clamp (70% of --size-h2's own clamp numbers) rather than a
+     scaled reference to --size-h2 itself, since --size-h2 is a shared
+     heading token used app-wide (Leaderboard header, Pulse prompt, etc.) —
+     changing it would have resized unrelated headings too. */
+  --size-dot-sm: 0.375rem; /* 6px, unchanged — not part of this session's ask */
+  --size-dot-md: 0.625rem; /* 10px, unchanged — not part of this session's ask */
+  --size-dot-lg: 0.7rem; /* was a hardcoded 16px; 11.2px equiv, -30% */
+  --size-dots-line: clamp(14px, 3.85vw, 16.8px); /* --size-h2's clamp × 0.7 */
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-pill: 999px;
+  --border-w: 3px;
+
+  --r-tile: var(--radius-md);
+  --r-pill: var(--radius-pill);
+  --r-card: var(--radius-lg);
+
+  --sp-1: 6px;
+  --sp-2: 12px;
+  --sp-3: 18px;
+  --sp-4: 24px;
+  --sp-5: 36px;
+  --sp-6: 48px;
+  --sp-7: 64px;
+  --sp-8: 96px;
+
+  --dur-fast: 120ms;
+  --dur-mid: 220ms;
+  --dur-slow: 420ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.1, 1);
+}
