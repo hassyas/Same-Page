@@ -70,6 +70,14 @@ export const redis = {
     entries.sort((a, b) => (opts?.reverse ? b.score - a.score : a.score - b.score));
     return entries.slice(start, stop + 1);
   },
+  async zRem(key, members) {
+    const z = getZset(key);
+    let removed = 0;
+    for (const m of members) {
+      if (z.delete(m)) removed++;
+    }
+    return removed;
+  },
   async mGet(keys) {
     return keys.map((k) => (store.has(k) ? store.get(k) : null));
   },

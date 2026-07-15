@@ -22,6 +22,11 @@ import {
   getResolvedResult,
   maybePostDailyDigest,
   getUser,
+  SPECTRUM_TEMPLATES,
+  getTemplatePool,
+  submitSpectrum,
+  decideNextSubmission,
+  getApprovedSubmissions,
 } from './.bundle/entry.mjs';
 import {
   redis,
@@ -113,8 +118,8 @@ resetMockStore();
 const pulsePool = Array.from({ length: 6 }, (_, i) => makePost(`pulse-${i}`, `Pulse candidate post #${i}`, 100 + i * 10));
 const usedIds = new Set(['pulse-0', 'pulse-1']);
 
-const seedsA = buildPulseSeeds(pulsePool, usedIds, 2, 'sim-pulse-seed');
-const seedsB = buildPulseSeeds(pulsePool, usedIds, 2, 'sim-pulse-seed');
+const seedsA = buildPulseSeeds(pulsePool, usedIds, 2, 'sim-pulse-seed', SPECTRUM_TEMPLATES);
+const seedsB = buildPulseSeeds(pulsePool, usedIds, 2, 'sim-pulse-seed', SPECTRUM_TEMPLATES);
 assert('buildPulseSeeds is deterministic for the same seedKey', JSON.stringify(seedsA) === JSON.stringify(seedsB));
 assert('buildPulseSeeds prefers posts not already used in Showdown', seedsA.every((s) => !usedIds.has(s.post.id)), `seeds=${seedsA.map((s) => s.post.id).join(',')}`);
 assert('buildPulseSeeds spectrumId is "{templateId}:{postId}"', seedsA.every((s) => s.spectrumId.includes(':') && s.spectrumId.endsWith(s.post.id)));
@@ -123,7 +128,7 @@ assert('buildPulseSeeds spectrumId is "{templateId}:{postId}"', seedsA.every((s)
 // — buildPulseSeeds must still return `count` seeds by falling back to the
 // full pool rather than erroring or under-returning.
 const almostAllUsed = new Set(pulsePool.slice(0, 5).map((p) => p.id));
-const seedsFallback = buildPulseSeeds(pulsePool, almostAllUsed, 2, 'sim-pulse-seed-2');
+const seedsFallback = buildPulseSeeds(pulsePool, almostAllUsed, 2, 'sim-pulse-seed-2', SPECTRUM_TEMPLATES);
 assert('buildPulseSeeds still returns the requested count when fresh posts run out', seedsFallback.length === 2, `got ${seedsFallback.length}`);
 
 // ---------------------------------------------------------------------------
@@ -360,6 +365,41 @@ await maybePostDailyDigest(TC_TODAY); // must not throw
 setSubmitCommentError(null);
 await maybePostDailyDigest(TC_TODAY); // lock already consumed -> still no comment
 assert('digest: submitComment failure is swallowed AND the day is not retried', getSubmittedComments().length === 0, `got ${getSubmittedComments().length}`);
+
+// ---------------------------------------------------------------------------
+// Group G — submission review (Addendum A6 contribution loop) + template pool
+// ---------------------------------------------------------------------------
+console.log('\n=== Group G: submission review + Pulse template pool ===');
+resetMockStore();
+
+const subA = await submitSpectrum('t2_submitter', 'Is this a hot take?', 'Mild', 'Spicy');
+await submitSpectrum('t2_submitter', 'Second pitch', 'Left', 'Right');
+assert('submitSpectrum stores with status pending', subA.status === 'pending');
+
+const noneDecided = await decideNextSubmission('approved');
+assert('decideNextSubmission processes the queue FIFO (oldest first)', noneDecided.id === subA.id, `got ${noneDecided?.id}`);
+assert('decideNextSubmission sets the decided status', noneDecided.status === 'approved');
+
+const approvedList = await getApprovedSubmissions();
+assert('getApprovedSubmissions returns exactly the approved one', approvedList.length === 1 && approvedList[0].id === subA.id);
+
+const rejected = await decideNextSubmission('rejected');
+assert('decideNextSubmission handles a second, different submission', rejected.status === 'rejected' && rejected.id !== subA.id);
+
+const emptyQueue = await decideNextSubmission('approved');
+assert('decideNextSubmission on an empty queue returns null, no crash', emptyQueue === null);
+
+const poolOnce = await getTemplatePool();
+const poolTwice = await getTemplatePool();
+assert(
+  'getTemplatePool folds the approved submission in and caches (stable across calls)',
+  poolOnce.length === SPECTRUM_TEMPLATES.length + 1 && JSON.stringify(poolOnce) === JSON.stringify(poolTwice),
+  `got ${poolOnce.length} templates`
+);
+assert(
+  'getTemplatePool exposes the approved submission as a real template',
+  poolOnce.some((t) => t.id === subA.id && t.question === 'Is this a hot take?' && t.leftLabel === 'Mild' && t.rightLabel === 'Spicy')
+);
 
 // ---------------------------------------------------------------------------
 console.log(`\n=== SUMMARY: ${passed} passed, ${failed} failed ===`);

@@ -11,6 +11,7 @@ import { getCorpus } from './corpus';
 import { buildMatchups } from './matchup';
 import { recordPulseVote, getBlendedDistribution, bucketIndex } from './pulseAgg';
 import { buildPulseSeeds, getDefaultSeedDistribution } from './pulseRounds';
+import { getTemplatePool } from './spectrums';
 import { recordShowdownAnswer, getPercentCorrect } from './showdownAgg';
 import { showdownSurpriseStat, pulseSurpriseStat } from './surpriseStats';
 import { getSlateDate } from './slateDate';
@@ -67,14 +68,17 @@ const buildShowdownRounds = async (
 };
 
 // Corpus-driven Pulse (Addendum A2): a real subreddit post + an evergreen
-// spectrum template, picked deterministically per day. Prefers posts not
-// already used in today's Showdown matchups so the slate doesn't repeat.
-const buildPulseRounds = (
+// spectrum template (or a moderator-approved player submission, folded in
+// by getTemplatePool — Addendum A6's contribution loop), picked
+// deterministically per day. Prefers posts not already used in today's
+// Showdown matchups so the slate doesn't repeat.
+const buildPulseRounds = async (
   pool: ShowdownPost[],
   usedPostIds: Set<string>,
   date: string
-): HiddenPulse[] => {
-  const seeds = buildPulseSeeds(pool, usedPostIds, PULSE_ROUND_IDS.length, date);
+): Promise<HiddenPulse[]> => {
+  const templatePool = await getTemplatePool();
+  const seeds = buildPulseSeeds(pool, usedPostIds, PULSE_ROUND_IDS.length, date, templatePool);
   return seeds.map((seed, i) => ({
     type: 'pulse' as const,
     roundId: PULSE_ROUND_IDS[i]!,
@@ -91,7 +95,7 @@ const getHiddenRounds = async (date: string): Promise<HiddenRound[]> => {
   const pool = await getCorpus();
   const showdownRounds = await buildShowdownRounds(pool, date);
   const usedPostIds = new Set(showdownRounds.flatMap((r) => [r.postA.id, r.postB.id]));
-  const pulseRounds = buildPulseRounds(pool, usedPostIds, date);
+  const pulseRounds = await buildPulseRounds(pool, usedPostIds, date);
   return [...showdownRounds, ...pulseRounds];
 };
 

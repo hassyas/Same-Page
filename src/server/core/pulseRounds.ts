@@ -1,6 +1,6 @@
 import type { ShowdownPost } from '../../shared/types';
 import { seededShuffle } from './seededRandom';
-import { SPECTRUM_TEMPLATES } from './spectrums';
+import type { SpectrumTemplate } from './spectrums';
 
 export type PulseRoundSeed = {
   post: { id: string; title: string; thumb: string };
@@ -30,13 +30,14 @@ export const buildPulseSeeds = (
   corpus: ShowdownPost[],
   usedPostIds: Set<string>,
   count: number,
-  seedKey: string
+  seedKey: string,
+  templatePool: SpectrumTemplate[]
 ): PulseRoundSeed[] => {
   const fresh = corpus.filter((p) => !usedPostIds.has(p.id));
   const pool = fresh.length >= count ? fresh : corpus;
 
   const posts = seededShuffle(pool, `${seedKey}:pulse-posts`).slice(0, count);
-  const templates = seededShuffle(SPECTRUM_TEMPLATES, `${seedKey}:pulse-templates`);
+  const templates = seededShuffle(templatePool, `${seedKey}:pulse-templates`);
 
   return posts.map((post, i) => {
     const template = templates[i % templates.length]!;

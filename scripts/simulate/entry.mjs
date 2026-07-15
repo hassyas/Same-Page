@@ -14,3 +14,5 @@ export {
 } from '../../src/server/core/tomorrowsCall.ts';
 export { maybePostDailyDigest } from '../../src/server/core/digest.ts';
 export { getUser } from '../../src/server/core/game.ts';
+export { SPECTRUM_TEMPLATES, getTemplatePool } from '../../src/server/core/spectrums.ts';
+export { submitSpectrum, decideNextSubmission, getApprovedSubmissions } from '../../src/server/core/submissions.ts';

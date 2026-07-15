@@ -34,6 +34,20 @@
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/post-create"
+      },
+      {
+        "label": "Approve next submission",
+        "description": "Approves the oldest pending player submission and adds it to the Pulse rotation",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/approve-submission"
+      },
+      {
+        "label": "Reject next submission",
+        "description": "Rejects the oldest pending player submission",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/reject-submission"
       }
     ]
   },
